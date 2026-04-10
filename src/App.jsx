@@ -1047,11 +1047,15 @@ const ResultsPage = ({ score, answers, userName }) => {
                 alignItems: 'center', textAlign: 'center', transition: 'all 0.2s'
               }}>
                 <div style={{
-                  width: 64, height: 64, borderRadius: 12,
-                  background: 'rgba(245,158,11,0.15)', border: `1px solid ${COLORS.amberBorder}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
+                  width: '100%', maxWidth: 280, aspectRatio: '3 / 2', borderRadius: 12,
+                  background: 'rgba(245,158,11,0.08)', border: `1px solid ${COLORS.amberBorder}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 18, overflow: 'hidden',
+                  boxShadow: `0 10px 28px rgba(0,0,0,0.45), 0 0 22px ${COLORS.amberGlow}`
                 }}>
-                  <BookOpen size={32} style={{ color: COLORS.amber }} />
+                  <img src="book-money-war.jpg" alt="غلاف كتاب المال في أوقات الحروب"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
                 </div>
                 <h4 style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 8 }}>المال في أوقات الحروب</h4>
                 <p style={{ color: COLORS.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
@@ -1077,11 +1081,15 @@ const ResultsPage = ({ score, answers, userName }) => {
                 alignItems: 'center', textAlign: 'center', transition: 'all 0.2s'
               }}>
                 <div style={{
-                  width: 64, height: 64, borderRadius: 12,
-                  background: 'rgba(245,158,11,0.15)', border: `1px solid ${COLORS.amberBorder}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
+                  width: '100%', maxWidth: 280, aspectRatio: '3 / 2', borderRadius: 12,
+                  background: 'rgba(245,158,11,0.08)', border: `1px solid ${COLORS.amberBorder}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 18, overflow: 'hidden',
+                  boxShadow: `0 10px 28px rgba(0,0,0,0.45), 0 0 22px ${COLORS.amberGlow}`
                 }}>
-                  <BookOpen size={32} style={{ color: COLORS.amber }} />
+                  <img src="book-chaos-map.jpg" alt="غلاف كتاب خريطة الفوضى"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
                 </div>
                 <h4 style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 8 }}>خريطة الفوضى</h4>
                 <p style={{ color: COLORS.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
