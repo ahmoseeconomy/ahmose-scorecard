@@ -1064,7 +1064,7 @@ const ResultsPage = ({ score, answers, userName }) => {
                 <p style={{ color: COLORS.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
                   خريطة طريقك لفهم الفوضى الاقتصادية وتحويلها لفرص حقيقية
                 </p>
-                <a href="https://ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
+                <a href="https://book.ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     background: COLORS.amber, color: '#000', fontWeight: 800,
