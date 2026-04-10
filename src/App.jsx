@@ -1132,6 +1132,35 @@ const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose })
           </button>
         )}
 
+        {/* cross-promo bot banner (web only) */}
+{!isTelegram && (
+          <a
+            href="https://t.me/AhmoseEconomyBot"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackEvent('bot_link_clicked', { placement: 'results' })}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              padding: '16px 20px',
+              background: 'linear-gradient(135deg, #229ED9 0%, #2AABEE 100%)',
+              color: '#ffffff',
+              textDecoration: 'none',
+              borderRadius: 14,
+              fontSize: 16,
+              fontWeight: 700,
+              marginBottom: 14,
+              boxShadow: '0 6px 24px rgba(42,171,238,0.35)',
+              border: '1px solid rgba(255,255,255,0.15)'
+            }}
+          >
+            <Send size={20} />
+            جرّب الحاسبة على بوت تليجرام
+          </a>
+        )}
+
         {/* Telegram channel invite */}
         <a
           href="https://t.me/ahmoseeconomy"
