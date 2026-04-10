@@ -199,6 +199,18 @@ const QUESTIONS = [
 const MAX_SCORE = 40;
 
 // ============================================================
+// Google Analytics helper
+// ============================================================
+const trackEvent = (eventName, params = {}) => {
+  try {
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      const isTg = !!(window.Telegram?.WebApp?.initData);
+      window.gtag('event', eventName, { source: isTg ? 'telegram' : 'web', ...params });
+    }
+  } catch (e) { /* no-op */ }
+};
+
+// ============================================================
 // نظام النتائج
 // ============================================================
 const getResultLevel = (score) => {
@@ -902,6 +914,7 @@ const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose })
   const openShare = (platform) => {
     const url = shareLinks[platform];
     if (url) {
+      trackEvent('share_clicked', { method: platform, percentage, result_label: resultLabel });
       window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
     }
   };
@@ -917,6 +930,7 @@ const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose })
         document.body.appendChild(ta); ta.select();
         document.execCommand('copy'); document.body.removeChild(ta);
       }
+      trackEvent('share_clicked', { method: 'copy_link', percentage, result_label: resultLabel });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {}
@@ -930,6 +944,7 @@ const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose })
           text: shareTextShort,
           url: shareUrl
         });
+        trackEvent('share_clicked', { method: 'native_share', percentage, result_label: resultLabel });
       } catch (err) {}
     }
   };
@@ -1350,6 +1365,7 @@ const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
                   دليلك العملي لحماية أموالك في أوقات الاضطراب الاقتصادي والأزمات
                 </p>
                 <a href="https://money-war.ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
+                  onClick={() => trackEvent('book_link_clicked', { book: 'money_war', placement: 'results' })}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     background: COLORS.amber, color: '#000', fontWeight: 800,
@@ -1384,6 +1400,7 @@ const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
                   خريطة طريقك لفهم الفوضى الاقتصادية وتحويلها لفرص حقيقية
                 </p>
                 <a href="https://book.ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
+                  onClick={() => trackEvent('book_link_clicked', { book: 'chaos_map', placement: 'results' })}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     background: COLORS.amber, color: '#000', fontWeight: 800,
@@ -1436,6 +1453,7 @@ const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
       <div style={{ position: 'fixed', bottom: 0, width: '100%', padding: 16, zIndex: 50 }}>
         <div style={{ maxWidth: 420, margin: '0 auto' }}>
           <a href="https://money-war.ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
+            onClick={() => trackEvent('book_link_clicked', { book: 'money_war', placement: 'sticky_cta' })}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: COLORS.amber, color: '#000', borderRadius: 9999,
@@ -1489,15 +1507,35 @@ const App = () => {
     }
   }, []);
 
-  const startQuiz = () => { setView('quiz'); window.scrollTo(0, 0); };
+  const startQuiz = () => {
+    trackEvent('quiz_start');
+    setView('quiz');
+    window.scrollTo(0, 0);
+  };
 
   const handleQuizComplete = (totalScore, allAnswers) => {
     setScore(totalScore); setAnswers(allAnswers);
+    const percentage = Math.round((totalScore / MAX_SCORE) * 100);
+    const result = getResultLevel(totalScore);
+    trackEvent('quiz_completed', {
+      score: totalScore,
+      max_score: MAX_SCORE,
+      percentage,
+      result_level: result.labelEn,
+      result_label: result.label
+    });
     setView('leadgate'); window.scrollTo(0, 0);
   };
 
   const handleLeadSubmit = async (name, email) => {
     setUserName(name);
+    const percentage = Math.round((score / MAX_SCORE) * 100);
+    const result = getResultLevel(score);
+    trackEvent('lead_submitted', {
+      percentage,
+      result_level: result.labelEn,
+      has_telegram: !!telegramUser
+    });
     // بناء بيانات العميل الكاملة وإرسالها لـ Google Sheets
     const leadData = buildLeadData(name, email, score, answers, telegramUser);
     console.log('📋 Lead Data:', leadData);
