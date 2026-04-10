@@ -313,11 +313,15 @@ const sendToGoogleSheets = async (data) => {
   }
 };
 
-const buildLeadData = (name, email, score, answers) => {
+const buildLeadData = (name, email, score, answers, telegramUser = null) => {
   const result = getResultLevel(score);
   const percentage = Math.round((score / MAX_SCORE) * 100);
   const technicalScore = answers.filter(a => a.category === 'technical').reduce((s, a) => s + a.score, 0);
   const qualifyingScore = answers.filter(a => a.category === 'qualifying').reduce((s, a) => s + a.score, 0);
+  const source = telegramUser ? 'telegram' : 'web';
+  const telegramInfo = telegramUser
+    ? `@${telegramUser.username || '-'} (id:${telegramUser.id}) ${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim()
+    : '';
 
   // استخراج الإجابات التأهيلية المهمة
   const concerns = answers.find(a => a.questionId === 11)?.answerText || '';
@@ -344,6 +348,9 @@ const buildLeadData = (name, email, score, answers) => {
     // توصيات المنتجات (لصاحب المشروع)
     recommendedProducts: result.productRecommendations.map(p => p.product + ' [' + p.priority + ']').join(' | '),
     productReason: result.productRecommendations[0]?.reason || '',
+    // معلومات تليجرام (إن وُجدت)
+    source,
+    telegramInfo,
   };
 };
 
@@ -766,8 +773,8 @@ const QuizScreen = ({ onComplete }) => {
 };
 
 // --- Lead Gate ---
-const LeadGate = ({ score, onSubmit }) => {
-  const [name, setName] = useState('');
+const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => {
+  const [name, setName] = useState(prefillName || '');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -801,7 +808,11 @@ const LeadGate = ({ score, onSubmit }) => {
             <span style={{ fontWeight: 700, fontSize: 14, color: result.color }}>{result.label}</span>
           </div>
           <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: 900, marginBottom: 16, color: '#fff' }}>نتيجتك جاهزة!</h2>
-          <p style={{ color: COLORS.textMuted, fontSize: 18 }}>سجّل بياناتك علشان تشوف تحليلك الكامل والنصائح المخصصة ليك.</p>
+          <p style={{ color: COLORS.textMuted, fontSize: 18 }}>
+            {isTelegram && prefillName
+              ? `أهلاً ${prefillName} 👋 — سجّل إيميلك علشان تشوف تحليلك الكامل`
+              : 'سجّل بياناتك علشان تشوف تحليلك الكامل والنصائح المخصصة ليك.'}
+          </p>
         </div>
 
         {/* النتيجة المخفية */}
@@ -1134,7 +1145,7 @@ const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose })
 };
 
 // --- Results Page ---
-const ResultsPage = ({ score, answers, userName }) => {
+const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
   const [showTips, setShowTips] = useState(false);
   const [showCTA, setShowCTA] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -1448,6 +1459,35 @@ const App = () => {
   const [score, setScore] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [userName, setUserName] = useState('');
+  const [telegramUser, setTelegramUser] = useState(null);
+  const [isTelegram, setIsTelegram] = useState(false);
+
+  // تهيئة Telegram Mini App SDK
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (tg && tg.initData) {
+      setIsTelegram(true);
+      try {
+        tg.ready();
+        tg.expand();
+        // تطبيق ألوان الثيم الداكن على شريط تيليجرام
+        if (tg.setHeaderColor) tg.setHeaderColor('#05070a');
+        if (tg.setBackgroundColor) tg.setBackgroundColor('#05070a');
+        // منع إغلاق الـ Mini App بالسحب بطريق الخطأ
+        if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
+      } catch (e) {
+        console.warn('Telegram WebApp init warning:', e);
+      }
+      // استخراج بيانات المستخدم من تيليجرام
+      const user = tg.initDataUnsafe?.user;
+      if (user) {
+        setTelegramUser(user);
+        if (user.first_name) {
+          setUserName(user.first_name);
+        }
+      }
+    }
+  }, []);
 
   const startQuiz = () => { setView('quiz'); window.scrollTo(0, 0); };
 
@@ -1459,9 +1499,31 @@ const App = () => {
   const handleLeadSubmit = async (name, email) => {
     setUserName(name);
     // بناء بيانات العميل الكاملة وإرسالها لـ Google Sheets
-    const leadData = buildLeadData(name, email, score, answers);
+    const leadData = buildLeadData(name, email, score, answers, telegramUser);
     console.log('📋 Lead Data:', leadData);
     await sendToGoogleSheets(leadData);
+
+    // إرسال النتيجة للبوت عبر sendData (لو داخل تيليجرام)
+    const tg = window.Telegram?.WebApp;
+    if (isTelegram && tg && tg.sendData) {
+      try {
+        const percentage = Math.round((score / MAX_SCORE) * 100);
+        const result = getResultLevel(score);
+        tg.sendData(JSON.stringify({
+          type: 'scorecard_result',
+          name,
+          email,
+          percentage,
+          label: result.label,
+          labelEn: result.labelEn,
+          tgId: telegramUser?.id || null,
+          tgUsername: telegramUser?.username || null
+        }));
+      } catch (e) {
+        console.warn('tg.sendData failed:', e);
+      }
+    }
+
     setView('results'); window.scrollTo(0, 0);
   };
 
@@ -1474,8 +1536,8 @@ const App = () => {
       {/* الخطوط محملة في index.html */}
       {view === 'landing' && <LandingPage onStart={startQuiz} />}
       {view === 'quiz' && <QuizScreen onComplete={handleQuizComplete} />}
-      {view === 'leadgate' && <LeadGate score={score} onSubmit={handleLeadSubmit} />}
-      {view === 'results' && <ResultsPage score={score} answers={answers} userName={userName} />}
+      {view === 'leadgate' && <LeadGate score={score} onSubmit={handleLeadSubmit} prefillName={userName} isTelegram={isTelegram} />}
+      {view === 'results' && <ResultsPage score={score} answers={answers} userName={userName} isTelegram={isTelegram} />}
     </div>
   );
 };
