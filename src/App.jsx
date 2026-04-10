@@ -3,7 +3,7 @@ import {
   ShieldAlert, TrendingUp, Clock, ArrowRight, ChevronDown, Zap,
   Eye, Target, AlertCircle, CheckCircle2, Lock,
   Mail, User, BookOpen, Shield, AlertTriangle,
-  Activity, Flame, Award, BarChart3
+  Activity, Flame, Award, BarChart3, X, Link2, Send
 } from 'lucide-react';
 import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts';
 
@@ -856,11 +856,288 @@ const LeadGate = ({ score, onSubmit }) => {
   );
 };
 
+// --- Share Modal ---
+const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose }) => {
+  const [copied, setCopied] = useState(false);
+  const shareUrl = 'https://ahmose-scorecard.vercel.app/';
+
+  // رسالة جذابة بتثير الفضول
+  const shareText =
+    `🏦 اختبار الجاهزية المالية — اقتصاد أحمس\n\n` +
+    `${userName ? userName + ' خلّص الاختبار 👇\n' : ''}` +
+    `📊 النتيجة: ${percentage}% (${resultLabel})\n\n` +
+    `هل تقدر تحمي أموالك لو جت أزمة؟\n` +
+    `اعرف درجة جاهزيتك المالية في أقل من 3 دقايق ⏱️\n\n` +
+    `📢 انضم لقناتنا على تيليجرام: https://t.me/ahmoseeconomy\n\n` +
+    `👇 جرّب الاختبار`;
+
+  const shareTextShort =
+    `🏦 عملت اختبار الجاهزية المالية من اقتصاد أحمس\n` +
+    `نتيجتي: ${percentage}% (${resultLabel}) 📊\n\n` +
+    `هل تقدر تحمي أموالك لو جت أزمة؟ اعرف درجتك إنت كمان في 3 دقايق 👇`;
+
+  const encodedUrl = encodeURIComponent(shareUrl);
+  const encodedText = encodeURIComponent(shareText);
+  const encodedShort = encodeURIComponent(shareTextShort);
+
+  const shareLinks = {
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedShort}`,
+    twitter: `https://twitter.com/intent/tweet?text=${encodedShort}&url=${encodedUrl}&hashtags=اقتصاد_أحمس,الجاهزية_المالية`,
+    telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+    whatsapp: `https://wa.me/?text=${encodedShort}%0A${encodedUrl}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`
+  };
+
+  const openShare = (platform) => {
+    const url = shareLinks[platform];
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
+    }
+  };
+
+  const handleCopy = async () => {
+    const fullText = `${shareTextShort}\n${shareUrl}`;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(fullText);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = fullText; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {}
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'اختبار الجاهزية المالية — اقتصاد أحمس',
+          text: shareTextShort,
+          url: shareUrl
+        });
+      } catch (err) {}
+    }
+  };
+
+  // SVG icons inline (lucide doesn't have brand icons)
+  const brandIcons = {
+    facebook: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    ),
+    twitter: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+    ),
+    telegram: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+      </svg>
+    ),
+    whatsapp: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+      </svg>
+    )
+  };
+
+  const platforms = [
+    { key: 'telegram', name: 'تيليجرام', color: '#0088cc', icon: brandIcons.telegram },
+    { key: 'whatsapp', name: 'واتساب', color: '#25D366', icon: brandIcons.whatsapp },
+    { key: 'facebook', name: 'فيسبوك', color: '#1877F2', icon: brandIcons.facebook },
+    { key: 'twitter', name: 'إكس (تويتر)', color: '#ffffff', icon: brandIcons.twitter }
+  ];
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100,
+        background: 'rgba(0,0,0,0.85)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 20,
+        animation: 'fadeIn 0.2s ease-out'
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: `linear-gradient(180deg, ${COLORS.bgAlt} 0%, ${COLORS.bg} 100%)`,
+          border: `1.5px solid ${COLORS.amberBorder}`,
+          borderRadius: 24,
+          padding: '28px 24px',
+          maxWidth: 440, width: '100%',
+          boxShadow: `0 20px 60px rgba(0,0,0,0.6), 0 0 40px ${COLORS.amberGlow}`,
+          position: 'relative',
+          maxHeight: '90vh',
+          overflowY: 'auto'
+        }}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: 14, left: 14,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '50%', width: 36, height: 36,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: COLORS.textDim,
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = COLORS.textDim; }}
+          aria-label="إغلاق"
+        >
+          <X size={18} />
+        </button>
+
+        {/* Header with result badge */}
+        <div style={{ textAlign: 'center', marginBottom: 22 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            padding: '8px 18px',
+            background: `${resultColor}15`,
+            border: `1px solid ${resultColor}40`,
+            borderRadius: 9999,
+            marginBottom: 14
+          }}>
+            <span style={{ fontSize: 22, fontWeight: 900, color: resultColor }}>{percentage}%</span>
+            <span style={{ color: resultColor, fontWeight: 700, fontSize: 13 }}>{resultLabel}</span>
+          </div>
+          <h3 style={{ color: '#fff', fontSize: 22, fontWeight: 900, marginBottom: 8 }}>
+            شارك نتيجتك
+          </h3>
+          <p style={{ color: COLORS.textDim, fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+            اختار البلاتفورم اللي تحب تنشر عليها — خلي صحابك يعرفوا وضعهم المالي كمان
+          </p>
+        </div>
+
+        {/* Platform grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 12,
+          marginBottom: 16
+        }}>
+          {platforms.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => openShare(p.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '14px 16px',
+                background: 'rgba(255,255,255,0.04)',
+                border: `1px solid rgba(255,255,255,0.1)`,
+                borderRadius: 14,
+                color: '#fff',
+                fontSize: 14, fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                textAlign: 'right'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = `${p.color}20`;
+                e.currentTarget.style.borderColor = `${p.color}60`;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <div style={{ color: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {p.icon}
+              </div>
+              <span>{p.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Copy link button */}
+        <button
+          onClick={handleCopy}
+          style={{
+            width: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            padding: '14px',
+            background: copied ? `${COLORS.amber}20` : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${copied ? COLORS.amber : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 14,
+            color: copied ? COLORS.amber : '#fff',
+            fontSize: 14, fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            marginBottom: 10
+          }}
+        >
+          {copied ? <CheckCircle2 size={18} /> : <Link2 size={18} />}
+          <span>{copied ? 'تم نسخ الرابط والنص!' : 'نسخ الرابط (لإنستجرام أو أي تطبيق)'}</span>
+        </button>
+
+        {/* Native share fallback for mobile */}
+        {typeof navigator !== 'undefined' && navigator.share && (
+          <button
+            onClick={handleNativeShare}
+            style={{
+              width: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              padding: '14px',
+              background: 'rgba(245,158,11,0.08)',
+              border: `1px solid ${COLORS.amberBorder}`,
+              borderRadius: 14,
+              color: COLORS.amber,
+              fontSize: 14, fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              marginBottom: 14
+            }}
+          >
+            <Send size={18} />
+            <span>مشاركة عبر تطبيق آخر</span>
+          </button>
+        )}
+
+        {/* Telegram channel invite */}
+        <a
+          href="https://t.me/ahmoseeconomy"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '12px',
+            background: 'rgba(0,136,204,0.1)',
+            border: '1px solid rgba(0,136,204,0.3)',
+            borderRadius: 12,
+            color: '#4dabf7',
+            fontSize: 13, fontWeight: 700,
+            textDecoration: 'none',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,136,204,0.18)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,136,204,0.1)'; }}
+        >
+          <div style={{ color: '#4dabf7' }}>{brandIcons.telegram}</div>
+          <span>انضم لقناة اقتصاد أحمس على تيليجرام ←</span>
+        </a>
+      </div>
+    </div>
+  );
+};
+
 // --- Results Page ---
 const ResultsPage = ({ score, answers, userName }) => {
   const [showTips, setShowTips] = useState(false);
   const [showCTA, setShowCTA] = useState(false);
-  const [shareStatus, setShareStatus] = useState(''); // '', 'copied', 'shared'
+  const [showShareModal, setShowShareModal] = useState(false);
   const result = getResultLevel(score);
   const percentage = Math.round((score / MAX_SCORE) * 100);
   const ResultIcon = result.icon;
@@ -1117,46 +1394,31 @@ const ResultsPage = ({ score, answers, userName }) => {
         {/* Share */}
         <div style={{ marginTop: 48, textAlign: 'center', paddingBottom: 48 }}>
           <p style={{ color: COLORS.textDim, marginBottom: 20, fontSize: 14 }}>شارك النتيجة مع صحابك — خليهم يعرفوا وضعهم هما كمان</p>
-          <button onClick={async () => {
-            const shareUrl = 'https://ahmose-scorecard.vercel.app/';
-            const shareTitle = 'اختبار الجاهزية المالية — اقتصاد أحمس';
-            const shareText = `لسه عملت اختبار الجاهزية المالية من اقتصاد أحمس 🏦\nنتيجتي: ${percentage}% (${result.label})\n\nاعرف نتيجتك إنت كمان 👇`;
-            const fullText = `${shareText}\n${shareUrl}`;
-            try {
-              if (navigator.share) {
-                await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
-                setShareStatus('shared');
-              } else if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(fullText);
-                setShareStatus('copied');
-              } else {
-                // fallback قديم
-                const ta = document.createElement('textarea');
-                ta.value = fullText; ta.style.position = 'fixed'; ta.style.opacity = '0';
-                document.body.appendChild(ta); ta.select();
-                document.execCommand('copy'); document.body.removeChild(ta);
-                setShareStatus('copied');
-              }
-              setTimeout(() => setShareStatus(''), 2500);
-            } catch (err) {
-              // المستخدم لغى المشاركة — ما نعملش حاجة
-            }
-          }} style={{
+          <button onClick={() => setShowShareModal(true)} style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
             padding: '14px 36px',
             border: `2px solid ${COLORS.amber}`,
             borderRadius: 9999, fontSize: 15, fontWeight: 800,
-            background: shareStatus ? COLORS.amber : 'rgba(245,158,11,0.1)',
-            color: shareStatus ? '#000' : COLORS.amber,
+            background: 'rgba(245,158,11,0.1)',
+            color: COLORS.amber,
             cursor: 'pointer', transition: 'all 0.2s',
             boxShadow: `0 0 24px ${COLORS.amberGlow}`
           }}>
-            <span style={{ fontSize: 18 }}>{shareStatus === 'copied' ? '✓' : shareStatus === 'shared' ? '✓' : '📤'}</span>
-            <span>
-              {shareStatus === 'copied' ? 'تم نسخ الرابط!' : shareStatus === 'shared' ? 'تمت المشاركة!' : 'شارك نتيجتك'}
-            </span>
+            <span style={{ fontSize: 18 }}>📤</span>
+            <span>شارك نتيجتك</span>
           </button>
         </div>
+
+        {/* Share Modal */}
+        {showShareModal && (
+          <ShareModal
+            percentage={percentage}
+            resultLabel={result.label}
+            resultColor={result.color}
+            userName={userName}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
       </div>
 
       {/* Sticky Book CTA */}
