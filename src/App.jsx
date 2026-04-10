@@ -193,6 +193,19 @@ const QUESTIONS = [
       { text: '36 - 45 سنة', score: 1 },
       { text: '46 سنة فأكتر', score: 1 },
     ]
+  },
+  {
+    id: 16, category: 'qualifying',
+    question: 'سؤال إحصائي أخير (اختياري): إيه فئة الدخل الشهري الأقرب ليك بالدولار؟',
+    icon: '💵',
+    options: [
+      { text: 'أقل من 500 دولار', score: 0 },
+      { text: 'من 500 لـ 1500 دولار', score: 0 },
+      { text: 'من 1500 لـ 3000 دولار', score: 0 },
+      { text: 'من 3000 لـ 5000 دولار', score: 0 },
+      { text: 'أكتر من 5000 دولار', score: 0 },
+      { text: 'أفضل ما أجاوب', score: 0 },
+    ]
   }
 ];
 
@@ -288,6 +301,29 @@ const GOOGLE_FORM_ENTRIES = {
   details: 'entry.454930785',
 };
 
+const getUserGeolocation = async () => {
+  const fallback = { country: null, countryCode: null, city: null, ip: null, success: false };
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch('https://ipwho.is/', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!response.ok) return fallback;
+    const d = await response.json();
+    if (!d.success) return fallback;
+    return {
+      country: d.country || null,
+      countryCode: d.country_code || null,
+      city: d.city || null,
+      ip: d.ip || null,
+      success: true,
+    };
+  } catch (e) {
+    console.warn('Geolocation failed:', e);
+    return fallback;
+  }
+};
+
 const sendToGoogleSheets = async (data) => {
   try {
     // بنحط كل البيانات التفصيلية في حقل Details واحد كـ JSON
@@ -305,7 +341,12 @@ const sendToGoogleSheets = async (data) => {
       'Improvement Goal: ' + data.improvementGoal,
       'Age Group: ' + data.ageGroup,
       'Products: ' + data.recommendedProducts,
-      'Reason: ' + data.productReason,
+      'Income Range: ' + (data.incomeRange || 'Not specified'),
+    'Reason: ' + data.productReason,
+    'Country: ' + (data.country || 'Unknown'),
+    'Country Code: ' + (data.countryCode || 'XX'),
+    'City: ' + (data.city || 'Unknown'),
+    'IP: ' + (data.ip || 'Unknown'),
     ].join('\n');
 
     const formData = new FormData();
@@ -325,7 +366,7 @@ const sendToGoogleSheets = async (data) => {
   }
 };
 
-const buildLeadData = (name, email, score, answers, telegramUser = null) => {
+const buildLeadData = (name, email, score, answers, telegramUser = null, geo = null) => {
   const result = getResultLevel(score);
   const percentage = Math.round((score / MAX_SCORE) * 100);
   const technicalScore = answers.filter(a => a.category === 'technical').reduce((s, a) => s + a.score, 0);
@@ -341,6 +382,7 @@ const buildLeadData = (name, email, score, answers, telegramUser = null) => {
   const crisisExperience = answers.find(a => a.questionId === 13)?.answerText || '';
   const improvementGoal = answers.find(a => a.questionId === 14)?.answerText || '';
   const ageGroup = answers.find(a => a.questionId === 15)?.answerText || '';
+  const incomeRange = answers.find(a => a.questionId === 16)?.answerText || '';
 
   return {
     timestamp: new Date().toISOString(),
@@ -357,6 +399,11 @@ const buildLeadData = (name, email, score, answers, telegramUser = null) => {
     crisisExperience: crisisExperience,
     improvementGoal: improvementGoal,
     ageGroup: ageGroup,
+    incomeRange: incomeRange,
+    country: geo && geo.country || null,
+    countryCode: geo && geo.countryCode || null,
+    city: geo && geo.city || null,
+    ip: geo && geo.ip || null,
     // توصيات المنتجات (لصاحب المشروع)
     recommendedProducts: result.productRecommendations.map(p => p.product + ' [' + p.priority + ']').join(' | '),
     productReason: result.productRecommendations[0]?.reason || '',
@@ -1503,6 +1550,8 @@ const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
 // ============================================================
 const App = () => {
   const [view, setView] = useState('landing');
+  const [geo, setGeo] = useState({ country: null, countryCode: null, city: null, ip: null, success: false });
+  useEffect(() => { getUserGeolocation().then(setGeo); }, []);
   const [score, setScore] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [userName, setUserName] = useState('');
@@ -1566,7 +1615,7 @@ const App = () => {
       has_telegram: !!telegramUser
     });
     // بناء بيانات العميل الكاملة وإرسالها لـ Google Sheets
-    const leadData = buildLeadData(name, email, score, answers, telegramUser);
+    const leadData = buildLeadData(name, email, score, answers, telegramUser, geo);
     console.log('📋 Lead Data:', leadData);
     await sendToGoogleSheets(leadData);
 
