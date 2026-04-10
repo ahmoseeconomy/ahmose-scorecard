@@ -837,6 +837,7 @@ const LeadGate = ({ score, onSubmit }) => {
 const ResultsPage = ({ score, answers, userName }) => {
   const [showTips, setShowTips] = useState(false);
   const [showCTA, setShowCTA] = useState(false);
+  const [shareStatus, setShareStatus] = useState(''); // '', 'copied', 'shared'
   const result = getResultLevel(score);
   const percentage = Math.round((score / MAX_SCORE) * 100);
   const ResultIcon = result.icon;
@@ -996,45 +997,134 @@ const ResultsPage = ({ score, answers, userName }) => {
           </div>
         </div>
 
-        {/* CTA للكتاب */}
+        {/* CTA للكتابين */}
         <div style={{ opacity: showCTA ? 1 : 0, transform: showCTA ? 'translateY(0)' : 'translateY(32px)', transition: 'all 0.7s' }}>
           <div style={{
-            position: 'relative', padding: '32px 32px 40px', borderRadius: 24,
+            position: 'relative', padding: '40px 24px', borderRadius: 24,
             border: `2px solid rgba(245,158,11,0.3)`,
             background: 'linear-gradient(to bottom, rgba(245,158,11,0.1), rgba(245,158,11,0.05))',
-            textAlign: 'center', overflow: 'hidden'
+            overflow: 'hidden'
           }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(to right, transparent, ${COLORS.amber}, transparent)` }}></div>
-            <BookOpen size={48} style={{ color: COLORS.amber, margin: '0 auto 16px', display: 'block' }} />
-            <h3 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.8rem)', fontWeight: 900, marginBottom: 16, color: '#fff' }}>المال في أوقات الحروب</h3>
-            <p style={{ color: '#d4d4d4', fontSize: 18, marginBottom: 32, maxWidth: 500, margin: '0 auto 32px', lineHeight: 1.7 }}>{result.bookCTA}</p>
-            <a href="https://money-war.ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 12,
-                background: COLORS.amber, color: '#000', fontWeight: 900,
-                padding: '20px 48px', borderRadius: 9999, fontSize: 20,
-                textDecoration: 'none', boxShadow: `0 0 40px ${COLORS.amberGlow}`,
-                transition: 'all 0.2s'
+
+            {/* العنوان الرئيسي */}
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <BookOpen size={44} style={{ color: COLORS.amber, margin: '0 auto 12px', display: 'block' }} />
+              <h3 style={{ fontSize: 'clamp(1.4rem, 3vw, 1.7rem)', fontWeight: 900, marginBottom: 8, color: '#fff' }}>الكتب اللي هتنقلك للمستوى التالي</h3>
+              <p style={{ color: '#d4d4d4', fontSize: 15, lineHeight: 1.7, maxWidth: 520, margin: '12px auto 0' }}>{result.bookCTA}</p>
+            </div>
+
+            {/* شبكة الكتابين */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 24 }}>
+
+              {/* الكتاب الأول */}
+              <div style={{
+                background: 'rgba(0,0,0,0.35)', border: `1px solid ${COLORS.amberBorder}`,
+                borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', textAlign: 'center', transition: 'all 0.2s'
               }}>
-              احصل على الكتاب الآن
-              <ArrowRight size={22} />
-            </a>
-            <p style={{ marginTop: 24, color: COLORS.textDim, fontSize: 14 }}>الخطوة الأولى في تأمين مستقبلك المالي</p>
+                <div style={{
+                  width: 64, height: 64, borderRadius: 12,
+                  background: 'rgba(245,158,11,0.15)', border: `1px solid ${COLORS.amberBorder}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
+                }}>
+                  <BookOpen size={32} style={{ color: COLORS.amber }} />
+                </div>
+                <h4 style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 8 }}>المال في أوقات الحروب</h4>
+                <p style={{ color: COLORS.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
+                  دليلك العملي لحماية أموالك في أوقات الاضطراب الاقتصادي والأزمات
+                </p>
+                <a href="https://money-war.ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    background: COLORS.amber, color: '#000', fontWeight: 800,
+                    padding: '12px 24px', borderRadius: 9999, fontSize: 14,
+                    textDecoration: 'none', width: '100%', justifyContent: 'center',
+                    boxShadow: `0 0 24px ${COLORS.amberGlow}`, transition: 'all 0.2s'
+                  }}>
+                  احصل على الكتاب
+                  <ArrowRight size={16} />
+                </a>
+              </div>
+
+              {/* الكتاب الثاني */}
+              <div style={{
+                background: 'rgba(0,0,0,0.35)', border: `1px solid ${COLORS.amberBorder}`,
+                borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', textAlign: 'center', transition: 'all 0.2s'
+              }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: 12,
+                  background: 'rgba(245,158,11,0.15)', border: `1px solid ${COLORS.amberBorder}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
+                }}>
+                  <BookOpen size={32} style={{ color: COLORS.amber }} />
+                </div>
+                <h4 style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 8 }}>خريطة الفوضى</h4>
+                <p style={{ color: COLORS.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
+                  خريطة طريقك لفهم الفوضى الاقتصادية وتحويلها لفرص حقيقية
+                </p>
+                <a href="https://ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    background: COLORS.amber, color: '#000', fontWeight: 800,
+                    padding: '12px 24px', borderRadius: 9999, fontSize: 14,
+                    textDecoration: 'none', width: '100%', justifyContent: 'center',
+                    boxShadow: `0 0 24px ${COLORS.amberGlow}`, transition: 'all 0.2s'
+                  }}>
+                  احصل على الكتاب
+                  <ArrowRight size={16} />
+                </a>
+              </div>
+
+            </div>
+
+            <p style={{ textAlign: 'center', color: COLORS.textDim, fontSize: 13, marginTop: 8 }}>الخطوة الأولى في تأمين مستقبلك المالي</p>
           </div>
         </div>
 
         {/* Share */}
         <div style={{ marginTop: 48, textAlign: 'center', paddingBottom: 48 }}>
-          <p style={{ color: COLORS.textDim, marginBottom: 16, fontSize: 14 }}>شارك النتيجة مع صحابك — خليهم يعرفوا وضعهم هما كمان</p>
-          <button onClick={() => {
-            const text = `لسه عملت اختبار الجاهزية المالية من اقتصاد أحمس 🏦\nنتيجتي: ${percentage}% (${result.label})\n\nاعرف نتيجتك إنت كمان 👇\nhttps://score.cheamr.com`;
-            if (navigator.share) { navigator.share({ text }); }
-            else { navigator.clipboard.writeText(text); alert('تم نسخ النص! شاركه مع صحابك'); }
+          <p style={{ color: COLORS.textDim, marginBottom: 20, fontSize: 14 }}>شارك النتيجة مع صحابك — خليهم يعرفوا وضعهم هما كمان</p>
+          <button onClick={async () => {
+            const shareUrl = 'https://ahmose-scorecard.vercel.app/';
+            const shareTitle = 'اختبار الجاهزية المالية — اقتصاد أحمس';
+            const shareText = `لسه عملت اختبار الجاهزية المالية من اقتصاد أحمس 🏦\nنتيجتي: ${percentage}% (${result.label})\n\nاعرف نتيجتك إنت كمان 👇`;
+            const fullText = `${shareText}\n${shareUrl}`;
+            try {
+              if (navigator.share) {
+                await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+                setShareStatus('shared');
+              } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(fullText);
+                setShareStatus('copied');
+              } else {
+                // fallback قديم
+                const ta = document.createElement('textarea');
+                ta.value = fullText; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); document.body.removeChild(ta);
+                setShareStatus('copied');
+              }
+              setTimeout(() => setShareStatus(''), 2500);
+            } catch (err) {
+              // المستخدم لغى المشاركة — ما نعملش حاجة
+            }
           }} style={{
-            padding: '12px 32px', border: `1px solid rgba(255,255,255,0.2)`,
-            borderRadius: 9999, fontSize: 14, fontWeight: 700,
-            background: 'transparent', color: '#fff', cursor: 'pointer'
-          }}>📤 شارك نتيجتك</button>
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            padding: '14px 36px',
+            border: `2px solid ${COLORS.amber}`,
+            borderRadius: 9999, fontSize: 15, fontWeight: 800,
+            background: shareStatus ? COLORS.amber : 'rgba(245,158,11,0.1)',
+            color: shareStatus ? '#000' : COLORS.amber,
+            cursor: 'pointer', transition: 'all 0.2s',
+            boxShadow: `0 0 24px ${COLORS.amberGlow}`
+          }}>
+            <span style={{ fontSize: 18 }}>{shareStatus === 'copied' ? '✓' : shareStatus === 'shared' ? '✓' : '📤'}</span>
+            <span>
+              {shareStatus === 'copied' ? 'تم نسخ الرابط!' : shareStatus === 'shared' ? 'تمت المشاركة!' : 'شارك نتيجتك'}
+            </span>
+          </button>
         </div>
       </div>
 
