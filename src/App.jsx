@@ -266,22 +266,45 @@ const getResultLevel = (score) => {
 };
 
 // ============================================================
-// Google Sheets Integration
+// Google Form Integration (Leads → Google Sheet)
 // ============================================================
-// 🔧 ضع رابط Google Apps Script Web App هنا بعد إعداده
-const GOOGLE_SHEET_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+// الفورم بيكتب مباشرة في شيت: "Ahmose Scorecard Leads"
+const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScUT5yrSE1RBR0krR01Bi3m3246vUJXrNQw1ZLDKdUDPwRU5A/formResponse';
+const GOOGLE_FORM_ENTRIES = {
+  name: 'entry.1227689264',
+  email: 'entry.1346113016',
+  details: 'entry.454930785',
+};
 
 const sendToGoogleSheets = async (data) => {
-  if (GOOGLE_SHEET_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    console.log('📋 [DEV MODE] بيانات المستخدم (Google Sheet مش متربط لسه):', data);
-    return true;
-  }
   try {
-    await fetch(GOOGLE_SHEET_URL, {
+    // بنحط كل البيانات التفصيلية في حقل Details واحد كـ JSON
+    // ده بيخلي الشيت نضيف (3 أعمدة: Name, Email, Details)
+    // ولو محتاج تفاصيل أكتر هتلاقيهم في عمود Details
+    const detailsBlob = [
+      'Score: ' + data.score,
+      'Points: ' + data.totalPoints,
+      'Level: ' + data.classification,
+      'Technical: ' + data.technicalScore,
+      'Qualifying: ' + data.qualifyingScore,
+      'Main Concern: ' + data.mainConcern,
+      'Knowledge: ' + data.knowledgeLevel,
+      'Crisis Experience: ' + data.crisisExperience,
+      'Improvement Goal: ' + data.improvementGoal,
+      'Age Group: ' + data.ageGroup,
+      'Products: ' + data.recommendedProducts,
+      'Reason: ' + data.productReason,
+    ].join('\n');
+
+    const formData = new FormData();
+    formData.append(GOOGLE_FORM_ENTRIES.name, data.name || '');
+    formData.append(GOOGLE_FORM_ENTRIES.email, data.email || '');
+    formData.append(GOOGLE_FORM_ENTRIES.details, detailsBlob);
+
+    await fetch(GOOGLE_FORM_URL, {
       method: 'POST',
       mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: formData,
     });
     return true;
   } catch (error) {
