@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ShieldAlert, TrendingUp, Clock, ArrowRight, ChevronDown, Zap,
   Eye, Target, AlertCircle, CheckCircle2, Lock,
@@ -298,8 +298,107 @@ const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScUT5yrSE1RBR0
 const GOOGLE_FORM_ENTRIES = {
   name: 'entry.1227689264',
   email: 'entry.1346113016',
+  country: 'entry.622869477',
+  phone: 'entry.1324327027',
   details: 'entry.454930785',
 };
+
+// ============================================================
+// Countries list (for LeadGate combobox)
+// ============================================================
+// الاسم بالعربي للعرض، والاسم بالإنجليزي للبحث (autocomplete)
+const COUNTRIES = [
+  { code: 'EG', name: 'Egypt', nameAr: 'مصر', dial: '+20', flag: '🇪🇬' },
+  { code: 'SA', name: 'Saudi Arabia', nameAr: 'السعودية', dial: '+966', flag: '🇸🇦' },
+  { code: 'AE', name: 'United Arab Emirates', nameAr: 'الإمارات', dial: '+971', flag: '🇦🇪' },
+  { code: 'KW', name: 'Kuwait', nameAr: 'الكويت', dial: '+965', flag: '🇰🇼' },
+  { code: 'QA', name: 'Qatar', nameAr: 'قطر', dial: '+974', flag: '🇶🇦' },
+  { code: 'BH', name: 'Bahrain', nameAr: 'البحرين', dial: '+973', flag: '🇧🇭' },
+  { code: 'OM', name: 'Oman', nameAr: 'عُمان', dial: '+968', flag: '🇴🇲' },
+  { code: 'JO', name: 'Jordan', nameAr: 'الأردن', dial: '+962', flag: '🇯🇴' },
+  { code: 'LB', name: 'Lebanon', nameAr: 'لبنان', dial: '+961', flag: '🇱🇧' },
+  { code: 'SY', name: 'Syria', nameAr: 'سوريا', dial: '+963', flag: '🇸🇾' },
+  { code: 'IQ', name: 'Iraq', nameAr: 'العراق', dial: '+964', flag: '🇮🇶' },
+  { code: 'PS', name: 'Palestine', nameAr: 'فلسطين', dial: '+970', flag: '🇵🇸' },
+  { code: 'YE', name: 'Yemen', nameAr: 'اليمن', dial: '+967', flag: '🇾🇪' },
+  { code: 'LY', name: 'Libya', nameAr: 'ليبيا', dial: '+218', flag: '🇱🇾' },
+  { code: 'TN', name: 'Tunisia', nameAr: 'تونس', dial: '+216', flag: '🇹🇳' },
+  { code: 'DZ', name: 'Algeria', nameAr: 'الجزائر', dial: '+213', flag: '🇩🇿' },
+  { code: 'MA', name: 'Morocco', nameAr: 'المغرب', dial: '+212', flag: '🇲🇦' },
+  { code: 'SD', name: 'Sudan', nameAr: 'السودان', dial: '+249', flag: '🇸🇩' },
+  { code: 'MR', name: 'Mauritania', nameAr: 'موريتانيا', dial: '+222', flag: '🇲🇷' },
+  { code: 'SO', name: 'Somalia', nameAr: 'الصومال', dial: '+252', flag: '🇸🇴' },
+  { code: 'DJ', name: 'Djibouti', nameAr: 'جيبوتي', dial: '+253', flag: '🇩🇯' },
+  { code: 'KM', name: 'Comoros', nameAr: 'جزر القمر', dial: '+269', flag: '🇰🇲' },
+  { code: 'TR', name: 'Turkey', nameAr: 'تركيا', dial: '+90', flag: '🇹🇷' },
+  { code: 'IR', name: 'Iran', nameAr: 'إيران', dial: '+98', flag: '🇮🇷' },
+  { code: 'IL', name: 'Israel', nameAr: 'إسرائيل', dial: '+972', flag: '🇮🇱' },
+  { code: 'US', name: 'United States', nameAr: 'أمريكا', dial: '+1', flag: '🇺🇸' },
+  { code: 'CA', name: 'Canada', nameAr: 'كندا', dial: '+1', flag: '🇨🇦' },
+  { code: 'GB', name: 'United Kingdom', nameAr: 'بريطانيا', dial: '+44', flag: '🇬🇧' },
+  { code: 'IE', name: 'Ireland', nameAr: 'أيرلندا', dial: '+353', flag: '🇮🇪' },
+  { code: 'FR', name: 'France', nameAr: 'فرنسا', dial: '+33', flag: '🇫🇷' },
+  { code: 'DE', name: 'Germany', nameAr: 'ألمانيا', dial: '+49', flag: '🇩🇪' },
+  { code: 'IT', name: 'Italy', nameAr: 'إيطاليا', dial: '+39', flag: '🇮🇹' },
+  { code: 'ES', name: 'Spain', nameAr: 'إسبانيا', dial: '+34', flag: '🇪🇸' },
+  { code: 'PT', name: 'Portugal', nameAr: 'البرتغال', dial: '+351', flag: '🇵🇹' },
+  { code: 'NL', name: 'Netherlands', nameAr: 'هولندا', dial: '+31', flag: '🇳🇱' },
+  { code: 'BE', name: 'Belgium', nameAr: 'بلجيكا', dial: '+32', flag: '🇧🇪' },
+  { code: 'CH', name: 'Switzerland', nameAr: 'سويسرا', dial: '+41', flag: '🇨🇭' },
+  { code: 'AT', name: 'Austria', nameAr: 'النمسا', dial: '+43', flag: '🇦🇹' },
+  { code: 'SE', name: 'Sweden', nameAr: 'السويد', dial: '+46', flag: '🇸🇪' },
+  { code: 'NO', name: 'Norway', nameAr: 'النرويج', dial: '+47', flag: '🇳🇴' },
+  { code: 'DK', name: 'Denmark', nameAr: 'الدنمارك', dial: '+45', flag: '🇩🇰' },
+  { code: 'FI', name: 'Finland', nameAr: 'فنلندا', dial: '+358', flag: '🇫🇮' },
+  { code: 'IS', name: 'Iceland', nameAr: 'آيسلندا', dial: '+354', flag: '🇮🇸' },
+  { code: 'GR', name: 'Greece', nameAr: 'اليونان', dial: '+30', flag: '🇬🇷' },
+  { code: 'PL', name: 'Poland', nameAr: 'بولندا', dial: '+48', flag: '🇵🇱' },
+  { code: 'CZ', name: 'Czech Republic', nameAr: 'التشيك', dial: '+420', flag: '🇨🇿' },
+  { code: 'RO', name: 'Romania', nameAr: 'رومانيا', dial: '+40', flag: '🇷🇴' },
+  { code: 'HU', name: 'Hungary', nameAr: 'المجر', dial: '+36', flag: '🇭🇺' },
+  { code: 'UA', name: 'Ukraine', nameAr: 'أوكرانيا', dial: '+380', flag: '🇺🇦' },
+  { code: 'RU', name: 'Russia', nameAr: 'روسيا', dial: '+7', flag: '🇷🇺' },
+  { code: 'BY', name: 'Belarus', nameAr: 'بيلاروسيا', dial: '+375', flag: '🇧🇾' },
+  { code: 'KZ', name: 'Kazakhstan', nameAr: 'كازاخستان', dial: '+7', flag: '🇰🇿' },
+  { code: 'UZ', name: 'Uzbekistan', nameAr: 'أوزبكستان', dial: '+998', flag: '🇺🇿' },
+  { code: 'AZ', name: 'Azerbaijan', nameAr: 'أذربيجان', dial: '+994', flag: '🇦🇿' },
+  { code: 'GE', name: 'Georgia', nameAr: 'جورجيا', dial: '+995', flag: '🇬🇪' },
+  { code: 'AM', name: 'Armenia', nameAr: 'أرمينيا', dial: '+374', flag: '🇦🇲' },
+  { code: 'CN', name: 'China', nameAr: 'الصين', dial: '+86', flag: '🇨🇳' },
+  { code: 'JP', name: 'Japan', nameAr: 'اليابان', dial: '+81', flag: '🇯🇵' },
+  { code: 'KR', name: 'South Korea', nameAr: 'كوريا الجنوبية', dial: '+82', flag: '🇰🇷' },
+  { code: 'IN', name: 'India', nameAr: 'الهند', dial: '+91', flag: '🇮🇳' },
+  { code: 'PK', name: 'Pakistan', nameAr: 'باكستان', dial: '+92', flag: '🇵🇰' },
+  { code: 'BD', name: 'Bangladesh', nameAr: 'بنغلاديش', dial: '+880', flag: '🇧🇩' },
+  { code: 'LK', name: 'Sri Lanka', nameAr: 'سريلانكا', dial: '+94', flag: '🇱🇰' },
+  { code: 'NP', name: 'Nepal', nameAr: 'نيبال', dial: '+977', flag: '🇳🇵' },
+  { code: 'AF', name: 'Afghanistan', nameAr: 'أفغانستان', dial: '+93', flag: '🇦🇫' },
+  { code: 'ID', name: 'Indonesia', nameAr: 'إندونيسيا', dial: '+62', flag: '🇮🇩' },
+  { code: 'MY', name: 'Malaysia', nameAr: 'ماليزيا', dial: '+60', flag: '🇲🇾' },
+  { code: 'SG', name: 'Singapore', nameAr: 'سنغافورة', dial: '+65', flag: '🇸🇬' },
+  { code: 'TH', name: 'Thailand', nameAr: 'تايلاند', dial: '+66', flag: '🇹🇭' },
+  { code: 'PH', name: 'Philippines', nameAr: 'الفلبين', dial: '+63', flag: '🇵🇭' },
+  { code: 'VN', name: 'Vietnam', nameAr: 'فيتنام', dial: '+84', flag: '🇻🇳' },
+  { code: 'AU', name: 'Australia', nameAr: 'أستراليا', dial: '+61', flag: '🇦🇺' },
+  { code: 'NZ', name: 'New Zealand', nameAr: 'نيوزيلندا', dial: '+64', flag: '🇳🇿' },
+  { code: 'BR', name: 'Brazil', nameAr: 'البرازيل', dial: '+55', flag: '🇧🇷' },
+  { code: 'AR', name: 'Argentina', nameAr: 'الأرجنتين', dial: '+54', flag: '🇦🇷' },
+  { code: 'MX', name: 'Mexico', nameAr: 'المكسيك', dial: '+52', flag: '🇲🇽' },
+  { code: 'CL', name: 'Chile', nameAr: 'تشيلي', dial: '+56', flag: '🇨🇱' },
+  { code: 'CO', name: 'Colombia', nameAr: 'كولومبيا', dial: '+57', flag: '🇨🇴' },
+  { code: 'PE', name: 'Peru', nameAr: 'بيرو', dial: '+51', flag: '🇵🇪' },
+  { code: 'VE', name: 'Venezuela', nameAr: 'فنزويلا', dial: '+58', flag: '🇻🇪' },
+  { code: 'ZA', name: 'South Africa', nameAr: 'جنوب أفريقيا', dial: '+27', flag: '🇿🇦' },
+  { code: 'NG', name: 'Nigeria', nameAr: 'نيجيريا', dial: '+234', flag: '🇳🇬' },
+  { code: 'KE', name: 'Kenya', nameAr: 'كينيا', dial: '+254', flag: '🇰🇪' },
+  { code: 'ET', name: 'Ethiopia', nameAr: 'إثيوبيا', dial: '+251', flag: '🇪🇹' },
+  { code: 'UG', name: 'Uganda', nameAr: 'أوغندا', dial: '+256', flag: '🇺🇬' },
+  { code: 'TZ', name: 'Tanzania', nameAr: 'تنزانيا', dial: '+255', flag: '🇹🇿' },
+  { code: 'GH', name: 'Ghana', nameAr: 'غانا', dial: '+233', flag: '🇬🇭' },
+  { code: 'SN', name: 'Senegal', nameAr: 'السنغال', dial: '+221', flag: '🇸🇳' },
+  { code: 'CI', name: 'Ivory Coast', nameAr: 'ساحل العاج', dial: '+225', flag: '🇨🇮' },
+  { code: 'CM', name: 'Cameroon', nameAr: 'الكاميرون', dial: '+237', flag: '🇨🇲' },
+];
 
 const getUserGeolocation = async () => {
   const fallback = { country: null, countryCode: null, city: null, ip: null, success: false };
@@ -343,6 +442,8 @@ const sendToGoogleSheets = async (data) => {
       'Products: ' + data.recommendedProducts,
       'Income Range: ' + (data.incomeRange || 'Not specified'),
     'Reason: ' + data.productReason,
+    'User Country: ' + (data.userCountry || 'Not specified'),
+    'User Phone: ' + (data.userPhone || 'Not specified'),
     'Country: ' + (data.country || 'Unknown'),
     'Country Code: ' + (data.countryCode || 'XX'),
     'City: ' + (data.city || 'Unknown'),
@@ -352,6 +453,8 @@ const sendToGoogleSheets = async (data) => {
     const formData = new FormData();
     formData.append(GOOGLE_FORM_ENTRIES.name, data.name || '');
     formData.append(GOOGLE_FORM_ENTRIES.email, data.email || '');
+    formData.append(GOOGLE_FORM_ENTRIES.country, data.userCountry || '');
+    formData.append(GOOGLE_FORM_ENTRIES.phone, data.userPhone || '');
     formData.append(GOOGLE_FORM_ENTRIES.details, detailsBlob);
 
     await fetch(GOOGLE_FORM_URL, {
@@ -366,7 +469,7 @@ const sendToGoogleSheets = async (data) => {
   }
 };
 
-const buildLeadData = (name, email, score, answers, telegramUser = null, geo = null) => {
+const buildLeadData = (name, email, score, answers, telegramUser = null, geo = null, userCountry = '', userPhone = '') => {
   const result = getResultLevel(score);
   const percentage = Math.round((score / MAX_SCORE) * 100);
   const technicalScore = answers.filter(a => a.category === 'technical').reduce((s, a) => s + a.score, 0);
@@ -388,6 +491,8 @@ const buildLeadData = (name, email, score, answers, telegramUser = null, geo = n
     timestamp: new Date().toISOString(),
     name,
     email,
+    userCountry,
+    userPhone,
     score: percentage + '%',
     totalPoints: score + '/' + MAX_SCORE,
     classification: result.label + ' (' + result.labelEn + ')',
@@ -835,17 +940,54 @@ const QuizScreen = ({ onComplete }) => {
 const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => {
   const [name, setName] = useState(prefillName || '');
   const [email, setEmail] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [countryQuery, setCountryQuery] = useState('');
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const countryBoxRef = useRef(null);
   const result = getResultLevel(score);
   const percentage = Math.round((score / MAX_SCORE) * 100);
+
+  // إغلاق القائمة لما المستخدم يدوس برّاها
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (countryBoxRef.current && !countryBoxRef.current.contains(e.target)) {
+        setCountryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // فلترة قائمة الدول بناءً على النص المكتوب (بحث إنجليزي بالأحرف الأولى + عربي)
+  const filteredCountries = useMemo(() => {
+    const q = countryQuery.trim().toLowerCase();
+    if (!q) return COUNTRIES;
+    return COUNTRIES.filter(c =>
+      c.name.toLowerCase().startsWith(q) ||
+      c.name.toLowerCase().includes(q) ||
+      c.nameAr.includes(countryQuery.trim()) ||
+      c.code.toLowerCase().startsWith(q)
+    );
+  }, [countryQuery]);
+
+  const selectCountry = (c) => {
+    setSelectedCountry(c);
+    setCountryQuery('');
+    setCountryOpen(false);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) { setError('من فضلك اكتب اسمك'); return; }
     if (!email.trim() || !email.includes('@')) { setError('من فضلك اكتب إيميل صحيح'); return; }
+    if (!selectedCountry) { setError('من فضلك اختار بلدك'); return; }
     setLoading(true); setError('');
-    setTimeout(() => onSubmit(name, email), 1500);
+    const countryLabel = `${selectedCountry.flag} ${selectedCountry.name} (${selectedCountry.dial})`;
+    const fullPhone = phone.trim() ? `${selectedCountry.dial} ${phone.trim()}` : '';
+    setTimeout(() => onSubmit(name, email, countryLabel, fullPhone), 1500);
   };
 
   const inputStyle = {
@@ -909,6 +1051,110 @@ const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => 
             <Mail size={20} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: COLORS.textDim }} />
             <input type="email" placeholder="الإيميل بتاعك" value={email} onChange={(e) => setEmail(e.target.value)} style={{...inputStyle, direction: 'ltr', textAlign: 'right'}} />
           </div>
+
+          {/* Country autocomplete */}
+          <div ref={countryBoxRef} style={{ position: 'relative' }}>
+            {selectedCountry ? (
+              <div
+                onClick={() => { setSelectedCountry(null); setCountryOpen(true); setCountryQuery(''); }}
+                style={{
+                  ...inputStyle,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', padding: '16px', gap: 12
+                }}
+              >
+                <span style={{ color: COLORS.textDim, fontSize: 13 }}>اضغط لتغيير البلد</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ color: COLORS.amber, fontWeight: 700, direction: 'ltr' }}>{selectedCountry.dial}</span>
+                  <span style={{ fontWeight: 700 }}>{selectedCountry.nameAr}</span>
+                  <span style={{ fontSize: 22 }}>{selectedCountry.flag}</span>
+                </span>
+              </div>
+            ) : (
+              <>
+                <ChevronDown size={20} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: COLORS.textDim, pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  placeholder="ابحث عن بلدك (Egypt, Saudi...)"
+                  value={countryQuery}
+                  onFocus={() => setCountryOpen(true)}
+                  onChange={(e) => { setCountryQuery(e.target.value); setCountryOpen(true); }}
+                  style={{ ...inputStyle, direction: 'ltr', textAlign: 'right' }}
+                />
+              </>
+            )}
+
+            {countryOpen && !selectedCountry && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+                maxHeight: 260, overflowY: 'auto',
+                background: COLORS.bgCard,
+                border: `1px solid ${COLORS.borderLight}`,
+                borderRadius: 12,
+                zIndex: 20,
+                boxShadow: '0 10px 30px rgba(0,0,0,0.4)'
+              }}>
+                {filteredCountries.length === 0 ? (
+                  <div style={{ padding: 16, color: COLORS.textDim, textAlign: 'center', fontSize: 14 }}>
+                    مفيش نتائج — جرّب ابحث بالإنجليزي
+                  </div>
+                ) : filteredCountries.map(c => (
+                  <div
+                    key={c.code}
+                    onClick={() => selectCountry(c)}
+                    style={{
+                      padding: '12px 16px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      borderBottom: `1px solid ${COLORS.border}`,
+                      transition: 'background 0.15s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(245,158,11,0.08)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span style={{ color: COLORS.textDim, fontSize: 13, direction: 'ltr' }}>{c.dial}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 13, color: COLORS.textMuted, direction: 'ltr' }}>{c.name}</span>
+                      <span style={{ fontWeight: 700 }}>{c.nameAr}</span>
+                      <span style={{ fontSize: 20 }}>{c.flag}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Phone (optional) with locked dial code prefix */}
+          <div style={{
+            display: 'flex', alignItems: 'stretch', gap: 0,
+            background: COLORS.bgCard, border: `1px solid ${COLORS.borderLight}`,
+            borderRadius: 12, overflow: 'hidden'
+          }}>
+            <input
+              type="tel"
+              placeholder="رقم الموبايل (اختياري)"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+              style={{
+                flex: 1, background: 'transparent', border: 'none',
+                padding: '16px', color: '#fff', fontSize: 16,
+                outline: 'none', direction: 'ltr', textAlign: 'right',
+                minWidth: 0
+              }}
+            />
+            <div style={{
+              padding: '0 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(245,158,11,0.08)',
+              borderLeft: `1px solid ${COLORS.borderLight}`,
+              color: selectedCountry ? COLORS.amber : COLORS.textDim,
+              fontWeight: 700, fontSize: 15, direction: 'ltr',
+              minWidth: 70
+            }}>
+              {selectedCountry ? selectedCountry.dial : '+?'}
+            </div>
+          </div>
+
           {error && <p style={{ color: COLORS.red, fontSize: 14, textAlign: 'center' }}>{error}</p>}
           <button type="submit" disabled={loading} style={{
             width: '100%', background: loading ? '#92400e' : COLORS.amber, color: '#000',
@@ -1605,17 +1851,18 @@ const App = () => {
     setView('leadgate'); window.scrollTo(0, 0);
   };
 
-  const handleLeadSubmit = async (name, email) => {
+  const handleLeadSubmit = async (name, email, userCountry = '', userPhone = '') => {
     setUserName(name);
     const percentage = Math.round((score / MAX_SCORE) * 100);
     const result = getResultLevel(score);
     trackEvent('lead_submitted', {
       percentage,
       result_level: result.labelEn,
-      has_telegram: !!telegramUser
+      has_telegram: !!telegramUser,
+      user_country: userCountry || 'unknown'
     });
     // بناء بيانات العميل الكاملة وإرسالها لـ Google Sheets
-    const leadData = buildLeadData(name, email, score, answers, telegramUser, geo);
+    const leadData = buildLeadData(name, email, score, answers, telegramUser, geo, userCountry, userPhone);
     console.log('📋 Lead Data:', leadData);
     await sendToGoogleSheets(leadData);
 
