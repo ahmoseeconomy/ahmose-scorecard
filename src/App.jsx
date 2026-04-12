@@ -1325,8 +1325,7 @@ const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose })
         background: 'rgba(0,0,0,0.85)',
         backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 20,
-        animation: 'fadeIn 0.2s ease-out'
+        padding: 20
       }}
     >
       <div
