@@ -295,6 +295,9 @@ const getResultLevel = (score) => {
 // ============================================================
 // الفورم بيكتب مباشرة في شيت: "Ahmose Scorecard Leads"
 const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScUT5yrSE1RBR0krR01Bi3m3246vUJXrNQw1ZLDKdUDPwRU5A/formResponse';
+
+// Ahmes Economy Smart Conversion API
+const AHMES_API_URL = 'https://quiz.ahmoseeconomy.com/api/quiz-submit';
 const GOOGLE_FORM_ENTRIES = {
   name: 'entry.1227689264',
   email: 'entry.1346113016',
@@ -465,6 +468,42 @@ const sendToGoogleSheets = async (data) => {
     return true;
   } catch (error) {
     console.error('خطأ في إرسال البيانات:', error);
+    return false;
+  }
+};
+
+// --- Ahmes Economy API (4 AI agents pipeline) ---
+const sendToAhmesAPI = async (data) => {
+  try {
+    const res = await fetch(AHMES_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: data.name || '',
+        email: data.email || '',
+        phone: data.userPhone || '',
+        country: data.userCountry || data.country || '',
+        score: data.score || '',
+        totalPoints: data.totalPoints || '',
+        classification: data.classification || '',
+        technicalScore: data.technicalScore || '',
+        qualifyingScore: data.qualifyingScore || '',
+        mainConcern: data.mainConcern || '',
+        knowledgeLevel: data.knowledgeLevel || '',
+        crisisExperience: data.crisisExperience || '',
+        improvementGoal: data.improvementGoal || '',
+        ageGroup: data.ageGroup || '',
+        incomeRange: data.incomeRange || '',
+        recommendedProducts: data.recommendedProducts || '',
+        productReason: data.productReason || '',
+        source: data.source || 'web',
+      }),
+    });
+    const result = await res.json();
+    console.log('Ahmes API response:', result);
+    return result.ok;
+  } catch (error) {
+    console.error('Ahmes API error:', error);
     return false;
   }
 };
@@ -1865,6 +1904,9 @@ const App = () => {
     const leadData = buildLeadData(name, email, score, answers, telegramUser, geo, userCountry, userPhone);
     console.log('📋 Lead Data:', leadData);
     await sendToGoogleSheets(leadData);
+
+    // إرسال البيانات لنظام التحويل الذكي (4 وكلاء ذكاء اصطناعي)
+    sendToAhmesAPI(leadData).catch(console.error);
 
     // إرسال النتيجة للبوت عبر sendData (لو داخل تيليجرام)
     const tg = window.Telegram?.WebApp;
