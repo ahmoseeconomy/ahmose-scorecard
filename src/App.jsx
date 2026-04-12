@@ -1126,7 +1126,7 @@ const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => 
             {countryOpen && !selectedCountry && (
               <div style={{
                 position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
-                maxHeight: 260, overflowY: 'auto',
+                maxHeight: 160, overflowY: 'auto',
                 background: COLORS.bgCard,
                 border: `1px solid ${COLORS.borderLight}`,
                 borderRadius: 12,
@@ -1247,7 +1247,12 @@ const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose })
     const url = shareLinks[platform];
     if (url) {
       trackEvent('share_clicked', { method: platform, percentage, result_label: resultLabel });
-      window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
+      // Use simple _blank without popup specs to avoid browser popup blockers
+      const w = window.open(url, '_blank');
+      // Fallback: if popup was blocked, navigate directly
+      if (!w || w.closed) {
+        window.location.href = url;
+      }
     }
   };
 
@@ -1810,22 +1815,6 @@ const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
         )}
       </div>
 
-      {/* Sticky Book CTA */}
-      <div style={{ position: 'fixed', bottom: 0, width: '100%', padding: 16, zIndex: 50 }}>
-        <div style={{ maxWidth: 420, margin: '0 auto' }}>
-          <a href="https://money-war.ahmoseeconomy.com/" target="_blank" rel="noopener noreferrer"
-            onClick={() => trackEvent('book_link_clicked', { book: 'money_war', placement: 'sticky_cta' })}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: COLORS.amber, color: '#000', borderRadius: 9999,
-              padding: '12px 24px', fontWeight: 700, textDecoration: 'none',
-              boxShadow: `0 0 30px rgba(245,158,11,0.3)`
-            }}>
-            <span>احصل على الكتاب</span>
-            <ArrowRight size={20} />
-          </a>
-        </div>
-      </div>
     </div>
   );
 };
