@@ -1105,76 +1105,43 @@ const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => 
             <input type="email" placeholder="الإيميل بتاعك" value={email} onChange={(e) => setEmail(e.target.value)} style={{...inputStyle, direction: 'ltr', textAlign: 'right'}} />
           </div>
 
-          {/* Country autocomplete */}
-          <div ref={countryBoxRef} style={{ position: 'relative' }}>
-            {selectedCountry ? (
-              <div
-                onClick={() => { setSelectedCountry(null); setCountryOpen(true); setCountryQuery(''); }}
-                style={{
-                  ...inputStyle,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  cursor: 'pointer', padding: '16px', gap: 12
-                }}
-              >
-                <span style={{ color: COLORS.textDim, fontSize: 13 }}>اضغط لتغيير البلد</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ color: COLORS.amber, fontWeight: 700, direction: 'ltr' }}>{selectedCountry.dial}</span>
-                  <span style={{ fontWeight: 700 }}>{selectedCountry.nameAr}</span>
-                  <span style={{ fontSize: 22 }}>{selectedCountry.flag}</span>
-                </span>
-              </div>
-            ) : (
-              <>
-                <ChevronDown size={20} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: COLORS.textDim, pointerEvents: 'none' }} />
-                <input
-                  type="text"
-                  placeholder="ابحث عن بلدك (Egypt, Saudi...)"
-                  value={countryQuery}
-                  onFocus={() => setCountryOpen(true)}
-                  onChange={(e) => { setCountryQuery(e.target.value); setCountryOpen(true); }}
-                  style={{ ...inputStyle, direction: 'ltr', textAlign: 'right' }}
-                />
-              </>
-            )}
-
-            {countryOpen && !selectedCountry && (
-              <div style={{
-                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
-                maxHeight: 160, overflowY: 'auto',
-                background: COLORS.bgCard,
-                border: `1px solid ${COLORS.borderLight}`,
-                borderRadius: 12,
-                zIndex: 20,
-                boxShadow: '0 10px 30px rgba(0,0,0,0.4)'
-              }}>
-                {filteredCountries.length === 0 ? (
-                  <div style={{ padding: 16, color: COLORS.textDim, textAlign: 'center', fontSize: 14 }}>
-                    مفيش نتائج — جرّب ابحث بالإنجليزي
-                  </div>
-                ) : filteredCountries.map(c => (
-                  <div
-                    key={c.code}
-                    onClick={() => selectCountry(c)}
-                    style={{
-                      padding: '12px 16px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      borderBottom: `1px solid ${COLORS.border}`,
-                      transition: 'background 0.15s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(245,158,11,0.08)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <span style={{ color: COLORS.textDim, fontSize: 13, direction: 'ltr' }}>{c.dial}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 13, color: COLORS.textMuted, direction: 'ltr' }}>{c.name}</span>
-                      <span style={{ fontWeight: 700 }}>{c.nameAr}</span>
-                      <span style={{ fontSize: 20 }}>{c.flag}</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Country — simple text input with datalist */}
+          <div style={{ position: 'relative' }}>
+            <ChevronDown size={20} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: COLORS.textDim, pointerEvents: 'none' }} />
+            <input
+              type="text"
+              list="country-list"
+              placeholder="اكتب اسم بلدك (Egypt, Saudi...)"
+              value={countryQuery}
+              onChange={(e) => {
+                setCountryQuery(e.target.value);
+                const match = COUNTRIES.find(c =>
+                  `${c.flag} ${c.nameAr} ${c.name} ${c.dial}` === e.target.value ||
+                  c.name.toLowerCase() === e.target.value.toLowerCase() ||
+                  c.nameAr === e.target.value
+                );
+                setSelectedCountry(match || null);
+              }}
+              onBlur={() => {
+                if (!selectedCountry && countryQuery.trim()) {
+                  const q = countryQuery.trim().toLowerCase();
+                  const match = COUNTRIES.find(c =>
+                    c.name.toLowerCase().startsWith(q) ||
+                    c.nameAr.includes(countryQuery.trim())
+                  );
+                  if (match) {
+                    setSelectedCountry(match);
+                    setCountryQuery(`${match.flag} ${match.nameAr} ${match.name}`);
+                  }
+                }
+              }}
+              style={{ ...inputStyle, direction: 'ltr', textAlign: 'right' }}
+            />
+            <datalist id="country-list">
+              {COUNTRIES.map(c => (
+                <option key={c.code} value={`${c.flag} ${c.nameAr} ${c.name} ${c.dial}`} />
+              ))}
+            </datalist>
           </div>
 
           {/* Phone (optional) with locked dial code prefix */}
