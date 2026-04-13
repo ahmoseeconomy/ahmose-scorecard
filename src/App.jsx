@@ -1822,10 +1822,15 @@ const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
           </div>
         </div>
 
-        {/* Share */}
+        {/* Share on Facebook */}
         <div style={{ marginTop: 48, textAlign: 'center', paddingBottom: 48 }}>
           <p style={{ color: COLORS.textDim, marginBottom: 20, fontSize: 14 }}>شارك النتيجة مع صحابك — خليهم يعرفوا وضعهم هما كمان</p>
-          <button onClick={() => setShowShareModal(true)} style={{
+          <button onClick={() => {
+            const shareUrl = 'https://scorecard.ahmoseeconomy.com/';
+            const shareText = `حصلت على ${percentage}% في اختبار الجاهزية المالية من اقتصاد أحمس — جرّب وشوف نتيجتك!`;
+            const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+            window.open(fbUrl, '_blank');
+          }} style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
             padding: '14px 36px',
             border: `2px solid ${COLORS.amber}`,
@@ -1836,20 +1841,9 @@ const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
             boxShadow: `0 0 24px ${COLORS.amberGlow}`
           }}>
             <span style={{ fontSize: 18 }}>📤</span>
-            <span>شارك نتيجتك</span>
+            <span>شارك نتيجتك على فيسبوك</span>
           </button>
         </div>
-
-        {/* Share Modal */}
-        {showShareModal && (
-          <ShareModal
-            percentage={percentage}
-            resultLabel={result.label}
-            resultColor={result.color}
-            userName={userName}
-            onClose={() => setShowShareModal(false)}
-          />
-        )}
       </div>
 
     </div>
