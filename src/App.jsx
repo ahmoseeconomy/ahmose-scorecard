@@ -976,6 +976,16 @@ const QuizScreen = ({ onComplete }) => {
 };
 
 // --- Lead Gate ---
+const INCOME_BRACKETS = [
+  'أقل من 500$',
+  '500$ – 1,000$',
+  '1,000$ – 2,000$',
+  '2,000$ – 5,000$',
+  '5,000$ – 10,000$',
+  'أكثر من 10,000$',
+  'أفضل عدم الإجابة',
+];
+
 const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => {
   const [name, setName] = useState(prefillName || '');
   const [email, setEmail] = useState('');
@@ -983,6 +993,8 @@ const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => 
   const [countryQuery, setCountryQuery] = useState('');
   const [countryOpen, setCountryOpen] = useState(false);
   const [phone, setPhone] = useState('');
+  const [incomeRange, setIncomeRange] = useState('');
+  const [wantsCoupon, setWantsCoupon] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const countryBoxRef = useRef(null);
@@ -1026,7 +1038,9 @@ const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => 
     setLoading(true); setError('');
     const countryLabel = `${selectedCountry.flag} ${selectedCountry.name} (${selectedCountry.dial})`;
     const fullPhone = phone.trim() ? `${selectedCountry.dial} ${phone.trim()}` : '';
-    setTimeout(() => onSubmit(name, email, countryLabel, fullPhone), 1500);
+    const isEgypt = selectedCountry.code === 'EG';
+    const shouldSendEmail = wantsCoupon === true && !isEgypt;
+    setTimeout(() => onSubmit(name, email, countryLabel, fullPhone, incomeRange, shouldSendEmail), 1500);
   };
 
   const inputStyle = {
@@ -1191,6 +1205,63 @@ const LeadGate = ({ score, onSubmit, prefillName = '', isTelegram = false }) => 
               minWidth: 70
             }}>
               {selectedCountry ? selectedCountry.dial : '+?'}
+            </div>
+          </div>
+
+          {/* Income bracket (optional) */}
+          <div>
+            <label style={{ display: 'block', color: COLORS.textDim, fontSize: 13, marginBottom: 6, textAlign: 'right' }}>
+              سؤال إحصائي أخير (اختياري): إيه فئة الدخل الشهري الأقرب ليك بالدولار؟
+            </label>
+            <select
+              value={incomeRange}
+              onChange={(e) => setIncomeRange(e.target.value)}
+              style={{
+                ...inputStyle,
+                appearance: 'none',
+                cursor: 'pointer',
+                color: incomeRange ? '#fff' : COLORS.textDim,
+              }}
+            >
+              <option value="" style={{ background: COLORS.bgCard, color: COLORS.textDim }}>اختر (اختياري)</option>
+              {INCOME_BRACKETS.map((b) => (
+                <option key={b} value={b} style={{ background: COLORS.bgCard, color: '#fff' }}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Coupon consent */}
+          <div>
+            <label style={{ display: 'block', color: COLORS.textDim, fontSize: 13, marginBottom: 10, textAlign: 'right' }}>
+              هل تريد الحصول على كوبون خصم على إحدى منتجاتنا وأدواتنا الاقتصادية؟
+            </label>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                type="button"
+                onClick={() => setWantsCoupon(true)}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 10, fontSize: 15, fontWeight: 700,
+                  border: wantsCoupon === true ? `2px solid ${COLORS.amber}` : `1px solid ${COLORS.borderLight}`,
+                  background: wantsCoupon === true ? 'rgba(245,158,11,0.12)' : COLORS.bgCard,
+                  color: wantsCoupon === true ? COLORS.amber : COLORS.textDim,
+                  cursor: 'pointer', transition: 'all 0.2s',
+                }}
+              >
+                نعم، أريد ذلك
+              </button>
+              <button
+                type="button"
+                onClick={() => setWantsCoupon(false)}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 10, fontSize: 15, fontWeight: 700,
+                  border: wantsCoupon === false ? `2px solid ${COLORS.textDim}` : `1px solid ${COLORS.borderLight}`,
+                  background: wantsCoupon === false ? 'rgba(255,255,255,0.05)' : COLORS.bgCard,
+                  color: COLORS.textDim,
+                  cursor: 'pointer', transition: 'all 0.2s',
+                }}
+              >
+                لا، شكراً
+              </button>
             </div>
           </div>
 
@@ -1878,7 +1949,7 @@ const App = () => {
     setView('leadgate'); window.scrollTo(0, 0);
   };
 
-  const handleLeadSubmit = async (name, email, userCountry = '', userPhone = '') => {
+  const handleLeadSubmit = async (name, email, userCountry = '', userPhone = '', incomeRange = '', shouldSendEmail = false) => {
     setUserName(name);
     const percentage = Math.round((score / MAX_SCORE) * 100);
     const result = getResultLevel(score);
@@ -1886,15 +1957,22 @@ const App = () => {
       percentage,
       result_level: result.labelEn,
       has_telegram: !!telegramUser,
-      user_country: userCountry || 'unknown'
+      user_country: userCountry || 'unknown',
+      wants_coupon: shouldSendEmail,
+      income_range: incomeRange || 'not_provided'
     });
     // بناء بيانات العميل الكاملة وإرسالها لـ Google Sheets
     const leadData = buildLeadData(name, email, score, answers, telegramUser, geo, userCountry, userPhone);
+    leadData.incomeRange = incomeRange;
     console.log('📋 Lead Data:', leadData);
     await sendToGoogleSheets(leadData);
 
-    // إرسال البيانات لنظام التحويل الذكي (4 وكلاء ذكاء اصطناعي)
-    sendToAhmesAPI(leadData).catch(console.error);
+    // إرسال البيانات لنظام التحويل الذكي فقط لو عايز كوبون ومش من مصر
+    if (shouldSendEmail) {
+      sendToAhmesAPI(leadData).catch(console.error);
+    } else {
+      console.log('⏭ Skipping Ahmes API — user declined coupon or is in Egypt');
+    }
 
     // إرسال النتيجة للبوت عبر sendData (لو داخل تيليجرام)
     const tg = window.Telegram?.WebApp;
