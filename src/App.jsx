@@ -294,16 +294,23 @@ const getResultLevel = (score) => {
 // Google Form Integration (Leads → Google Sheet)
 // ============================================================
 // الفورم بيكتب مباشرة في شيت: "Ahmose Scorecard Leads"
-const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScUT5yrSE1RBR0krR01Bi3m3246vUJXrNQw1ZLDKdUDPwRU5A/formResponse';
+// Overridable via .env (VITE_GOOGLE_FORM_ID, VITE_GOOGLE_FORM_ENTRY_*) so the
+// IDs don't have to live in source control.
+const GOOGLE_FORM_ID =
+  import.meta.env.VITE_GOOGLE_FORM_ID ||
+  '1FAIpQLScUT5yrSE1RBR0krR01Bi3m3246vUJXrNQw1ZLDKdUDPwRU5A';
+const GOOGLE_FORM_URL = `https://docs.google.com/forms/d/e/${GOOGLE_FORM_ID}/formResponse`;
 
 // Ahmes Economy Smart Conversion API
-const AHMES_API_URL = 'https://quiz.ahmoseeconomy.com/api/quiz-submit';
+const AHMES_API_URL =
+  import.meta.env.VITE_AHMES_API_URL ||
+  'https://quiz.ahmoseeconomy.com/api/quiz-submit';
 const GOOGLE_FORM_ENTRIES = {
-  name: 'entry.1227689264',
-  email: 'entry.1346113016',
-  country: 'entry.622869477',
-  phone: 'entry.1324327027',
-  details: 'entry.454930785',
+  name: import.meta.env.VITE_GOOGLE_FORM_ENTRY_NAME || 'entry.1227689264',
+  email: import.meta.env.VITE_GOOGLE_FORM_ENTRY_EMAIL || 'entry.1346113016',
+  country: import.meta.env.VITE_GOOGLE_FORM_ENTRY_COUNTRY || 'entry.622869477',
+  phone: import.meta.env.VITE_GOOGLE_FORM_ENTRY_PHONE || 'entry.1324327027',
+  details: import.meta.env.VITE_GOOGLE_FORM_ENTRY_DETAILS || 'entry.454930785',
 };
 
 // ============================================================
@@ -421,7 +428,7 @@ const getUserGeolocation = async () => {
       success: true,
     };
   } catch (e) {
-    console.warn('Geolocation failed:', e);
+    if (import.meta.env.DEV) console.warn('Geolocation failed:', e);
     return fallback;
   }
 };
@@ -465,9 +472,10 @@ const sendToGoogleSheets = async (data) => {
       mode: 'no-cors',
       body: formData,
     });
+    // NOTE: mode: 'no-cors' masks network errors — we treat a non-throw as success.
     return true;
   } catch (error) {
-    console.error('خطأ في إرسال البيانات:', error);
+    if (import.meta.env.DEV) console.error('خطأ في إرسال البيانات:', error);
     return false;
   }
 };
@@ -475,9 +483,12 @@ const sendToGoogleSheets = async (data) => {
 // --- Ahmes Economy API (4 AI agents pipeline) ---
 const sendToAhmesAPI = async (data) => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
     const res = await fetch(AHMES_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         name: data.name || '',
         email: data.email || '',
@@ -499,11 +510,17 @@ const sendToAhmesAPI = async (data) => {
         source: data.source || 'web',
       }),
     });
-    const result = await res.json();
-    console.log('Ahmes API response:', result);
-    return result.ok;
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      if (import.meta.env.DEV) console.error('Ahmes API non-OK status:', res.status);
+      return false;
+    }
+    const result = await res.json().catch(() => null);
+    if (import.meta.env.DEV) console.log('Ahmes API response:', result);
+    return !!(result && result.ok === true);
   } catch (error) {
-    console.error('Ahmes API error:', error);
+    if (import.meta.env.DEV) console.error('Ahmes API error:', error);
     return false;
   }
 };
@@ -1297,18 +1314,18 @@ const ShareModal = ({ percentage, resultLabel, resultColor, userName, onClose })
   const handleCopy = async () => {
     const fullText = `${shareTextShort}\n${shareUrl}`;
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(fullText);
       } else {
-        const ta = document.createElement('textarea');
-        ta.value = fullText; ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); document.body.removeChild(ta);
+        // No modern Clipboard API — surface a failure rather than use deprecated execCommand.
+        throw new Error('Clipboard API not available');
       }
       trackEvent('share_clicked', { method: 'copy_link', percentage, result_label: resultLabel });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {}
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('Copy failed:', err);
+    }
   };
 
   const handleNativeShare = async () => {
@@ -1572,9 +1589,13 @@ const ResultsPage = ({ score, answers, userName, isTelegram = false }) => {
   const ResultIcon = result.icon;
 
   useEffect(() => {
-    setTimeout(() => setShowTips(true), 1500);
-    setTimeout(() => setShowCTA(true), 2500);
+    const t1 = setTimeout(() => setShowTips(true), 1500);
+    const t2 = setTimeout(() => setShowCTA(true), 2500);
     window.scrollTo(0, 0);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
   const chartData = [{ name: 'score', value: percentage, fill: result.color }];
@@ -1877,7 +1898,7 @@ const App = () => {
         // منع إغلاق الـ Mini App بالسحب بطريق الخطأ
         if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
       } catch (e) {
-        console.warn('Telegram WebApp init warning:', e);
+        if (import.meta.env.DEV) console.warn('Telegram WebApp init warning:', e);
       }
       // استخراج بيانات المستخدم من تيليجرام
       const user = tg.initDataUnsafe?.user;
@@ -1925,13 +1946,15 @@ const App = () => {
     // بناء بيانات العميل الكاملة وإرسالها لـ Google Sheets
     const leadData = buildLeadData(name, email, score, answers, telegramUser, geo, userCountry, userPhone);
     leadData.incomeRange = incomeRange;
-    console.log('📋 Lead Data:', leadData);
+    if (import.meta.env.DEV) console.log('📋 Lead Data:', leadData);
     await sendToGoogleSheets(leadData);
 
     // إرسال البيانات لنظام التحويل الذكي فقط لو عايز كوبون ومش من مصر
     if (shouldSendEmail) {
-      sendToAhmesAPI(leadData).catch(console.error);
-    } else {
+      sendToAhmesAPI(leadData).catch((err) => {
+        if (import.meta.env.DEV) console.error(err);
+      });
+    } else if (import.meta.env.DEV) {
       console.log('⏭ Skipping Ahmes API — user declined coupon or is in Egypt');
     }
 
@@ -1952,7 +1975,7 @@ const App = () => {
           tgUsername: telegramUser?.username || null
         }));
       } catch (e) {
-        console.warn('tg.sendData failed:', e);
+        if (import.meta.env.DEV) console.warn('tg.sendData failed:', e);
       }
     }
 
